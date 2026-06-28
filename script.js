@@ -163,3 +163,4 @@ loadCSV().then(data => {
     document.getElementById("results").innerHTML =
         "<p style='color:#666;'>Tapez une recherche pour afficher des résultats.</p>";
 });
+
