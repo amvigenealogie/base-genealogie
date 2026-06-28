@@ -1,4 +1,6 @@
+// -----------------------------
 // Chargement du CSV
+// -----------------------------
 async function loadCSV() {
     const response = await fetch("data.csv");
     const text = await response.text();
@@ -20,7 +22,48 @@ let resultsPerPage = 20;
 let currentPage = 1;
 let sortAsc = true;
 
+// -----------------------------
+// Soundex phonétique FR simplifié
+// -----------------------------
+function soundexFR(str) {
+    if (!str) return "";
+
+    str = str.toUpperCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // enlever accents
+        .replace(/[^A-Z]/g, ""); // enlever caractères non lettres
+
+    if (!str) return "";
+
+    const first = str[0];
+
+    const map = {
+        B:1, P:1,
+        C:2, S:2, K:2, Q:2, G:2, J:2, X:2, Z:2,
+        D:3, T:3,
+        L:4,
+        M:5, N:5,
+        R:6
+    };
+
+    let code = first;
+    let lastDigit = map[first] || "";
+
+    for (let i = 1; i < str.length; i++) {
+        let ch = str[i];
+        let digit = map[ch] || "";
+
+        if (digit !== lastDigit) {
+            code += digit;
+            lastDigit = digit;
+        }
+    }
+
+    return code.padEnd(4, "0").slice(0, 4);
+}
+
+// -----------------------------
 // Tri
+// -----------------------------
 function sortResults(results) {
     const column = document.getElementById("sortColumn").value;
     if (!column) return results;
@@ -32,7 +75,9 @@ function sortResults(results) {
     });
 }
 
-// Affichage
+// -----------------------------
+// Affichage des résultats
+// -----------------------------
 function renderResults(results) {
     results = sortResults(results);
 
@@ -76,7 +121,9 @@ function renderResults(results) {
     renderPagination(results.length);
 }
 
+// -----------------------------
 // Pagination
+// -----------------------------
 function renderPagination(total) {
     if (total === 0) {
         document.getElementById("pagination").innerHTML = "";
@@ -98,7 +145,27 @@ function goToPage(p) {
     updateResults();
 }
 
-// Mise à jour
+// -----------------------------
+// Filtres
+// -----------------------------
+function applyFilters(results) {
+    const fCom = document.getElementById("filterCom").value;
+    const fType = document.getElementById("filterType").value;
+    const fSource = document.getElementById("filterSource").value;
+    const fYear = document.getElementById("filterYear").value;
+
+    return results.filter(item => {
+        if (fCom && item.com !== fCom) return false;
+        if (fType && item.type !== fType) return false;
+        if (fSource && item.source !== fSource) return false;
+        if (fYear && item.a !== fYear) return false;
+        return true;
+    });
+}
+
+// -----------------------------
+// Mise à jour des résultats
+// -----------------------------
 function updateResults() {
     const query = document.getElementById("search").value.trim();
 
@@ -109,7 +176,43 @@ function updateResults() {
         return;
     }
 
-    const results = fuse.search(query).map(r => r.item);
+    let results;
+
+    // -----------------------------
+    // Recherche avec joker *
+    // -----------------------------
+    if (query.includes("*")) {
+        let regexPattern = "^" + query.replace(/\*/g, ".*") + "$";
+        let regex = new RegExp(regexPattern, "i");
+
+        results = allData.filter(item =>
+            regex.test(item.nom) ||
+            regex.test(item.pre)
+        );
+    }
+
+    // -----------------------------
+    // Recherche phonétique
+    // -----------------------------
+    else if (query.startsWith("~")) {
+        let q = query.slice(1);
+        let sx = soundexFR(q);
+
+        results = allData.filter(item =>
+            soundexFR(item.nom) === sx ||
+            soundexFR(item.pre) === sx
+        );
+    }
+
+    // -----------------------------
+    // Recherche stricte Fuse
+    // -----------------------------
+    else {
+        results = fuse.search(query).map(r => r.item);
+    }
+
+    // Appliquer les filtres
+    results = applyFilters(results);
 
     if (results.length === 0) {
         document.getElementById("results").innerHTML =
@@ -121,7 +224,9 @@ function updateResults() {
     renderResults(results);
 }
 
+// -----------------------------
 // Événements
+// -----------------------------
 document.getElementById("search").addEventListener("input", () => {
     currentPage = 1;
     updateResults();
@@ -151,16 +256,17 @@ document.getElementById("darkToggle").addEventListener("click", () => {
     document.body.classList.toggle("dark");
 });
 
+// -----------------------------
 // Initialisation
+// -----------------------------
 loadCSV().then(data => {
     allData = data;
 
     fuse = new Fuse(allData, {
         keys: ["num", "pre", "nom", "j", "m", "a", "com", "source", "type", "cote", "lien", "photo"],
-        threshold: 0.3
+        threshold: 0.0 // recherche stricte
     });
 
     document.getElementById("results").innerHTML =
         "<p style='color:#666;'>Tapez une recherche pour afficher des résultats.</p>";
 });
-
