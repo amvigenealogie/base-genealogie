@@ -3,7 +3,7 @@ async function loadCSV() {
     const response = await fetch("data.csv");
     const text = await response.text();
     const lines = text.split("\n").map(l => l.split(","));
-    
+
     const headers = lines[0];
     const data = lines.slice(1).map(row => {
         let obj = {};
@@ -20,7 +20,7 @@ let resultsPerPage = 20;
 let currentPage = 1;
 let sortAsc = true;
 
-// Tri des résultats
+// Tri
 function sortResults(results) {
     const column = document.getElementById("sortColumn").value;
     if (!column) return results;
@@ -32,7 +32,7 @@ function sortResults(results) {
     });
 }
 
-// Affichage des résultats
+// Affichage
 function renderResults(results) {
     results = sortResults(results);
 
@@ -42,37 +42,26 @@ function renderResults(results) {
 
     let html = "<table><tr>";
 
-    // En-têtes
     Object.keys(pageData[0] || {}).forEach(k => html += `<th>${k}</th>`);
     html += "</tr>";
 
-    // Lignes
     pageData.forEach(row => {
         html += "<tr>";
 
         Object.keys(row).forEach(key => {
             let value = row[key];
 
-            // PHOTO : miniature cliquable
             if (key === "photo" && value) {
-                html += `<td>
-                            <a href="${value}" target="_blank">
-                                <img src="${value}" style="height:60px; border-radius:4px;">
-                            </a>
-                         </td>`;
+                html += `<td><a href="${value}" target="_blank">
+                            <img src="${value}" style="height:60px; border-radius:4px;">
+                         </a></td>`;
             }
-
-            // LIEN : bouton "Voir"
             else if (key === "lien" && value) {
-                html += `<td>
-                            <a href="${value}" target="_blank"
-                               style="display:inline-block; padding:6px 10px; background:#0078ff; color:white; border-radius:4px; text-decoration:none;">
-                                Voir
-                            </a>
-                         </td>`;
+                html += `<td><a href="${value}" target="_blank"
+                            style="padding:6px 10px; background:#0078ff; color:white; border-radius:4px; text-decoration:none;">
+                            Voir
+                         </a></td>`;
             }
-
-            // Affichage normal
             else {
                 html += `<td>${value}</td>`;
             }
@@ -89,6 +78,11 @@ function renderResults(results) {
 
 // Pagination
 function renderPagination(total) {
+    if (total === 0) {
+        document.getElementById("pagination").innerHTML = "";
+        return;
+    }
+
     const pages = Math.ceil(total / resultsPerPage);
     let html = "";
 
@@ -104,10 +98,26 @@ function goToPage(p) {
     updateResults();
 }
 
-// Mise à jour des résultats (recherche + tri)
+// Mise à jour
 function updateResults() {
-    const query = document.getElementById("search").value;
-    const results = query ? fuse.search(query).map(r => r.item) : allData;
+    const query = document.getElementById("search").value.trim();
+
+    if (!query) {
+        document.getElementById("results").innerHTML =
+            "<p style='color:#666;'>Tapez une recherche pour afficher des résultats.</p>";
+        document.getElementById("pagination").innerHTML = "";
+        return;
+    }
+
+    const results = fuse.search(query).map(r => r.item);
+
+    if (results.length === 0) {
+        document.getElementById("results").innerHTML =
+            "<p style='color:#c00;'>Aucun résultat trouvé.</p>";
+        document.getElementById("pagination").innerHTML = "";
+        return;
+    }
+
     renderResults(results);
 }
 
@@ -128,6 +138,19 @@ document.getElementById("sortOrder").addEventListener("click", () => {
     updateResults();
 });
 
+// Bouton effacer
+document.getElementById("clearBtn").addEventListener("click", () => {
+    document.getElementById("search").value = "";
+    document.getElementById("results").innerHTML =
+        "<p style='color:#666;'>Tapez une recherche pour afficher des résultats.</p>";
+    document.getElementById("pagination").innerHTML = "";
+});
+
+// Mode sombre
+document.getElementById("darkToggle").addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+});
+
 // Initialisation
 loadCSV().then(data => {
     allData = data;
@@ -137,6 +160,6 @@ loadCSV().then(data => {
         threshold: 0.3
     });
 
-    renderResults(allData);
+    document.getElementById("results").innerHTML =
+        "<p style='color:#666;'>Tapez une recherche pour afficher des résultats.</p>";
 });
-
