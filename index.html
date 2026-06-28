@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Base de données – Recherche</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f5f5f5;
+    }
+
+    h2 {
+        margin-bottom: 10px;
+    }
+
+    #search {
+        width: 350px;
+        padding: 10px;
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+
+    #sortColumn, #sortOrder {
+        padding: 8px;
+        font-size: 15px;
+        margin-right: 10px;
+        margin-bottom: 15px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        margin-top: 20px;
+    }
+
+    th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        font-size: 14px;
+        text-align: left;
+    }
+
+    th {
+        background: #eaeaea;
+    }
+
+    .pagination {
+        margin-top: 20px;
+    }
+
+    .pagination button {
+        padding: 8px 12px;
+        margin: 2px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+</style>
+</head>
+
+<body>
+
+<h2>Recherche dans la base</h2>
+
+<!-- Barre de recherche -->
+<input id="search" placeholder="Tape un mot, un type, une année…">
+
+<!-- Tri -->
+<select id="sortColumn">
+    <option value="">-- Trier par --</option>
+    <option value="num">num</option>
+    <option value="pre">pre</option>
+    <option value="nom">nom</option>
+    <option value="j">j</option>
+    <option value="m">m</option>
+    <option value="a">a</option>
+    <option value="com">com</option>
+    <option value="source">source</option>
+    <option value="type">type</option>
+    <option value="cote">cote</option>
+    <option value="lien">lien</option>
+    <option value="photo">photo</option>
+</select>
+
+<button id="sortOrder">Ordre croissant</button>
+
+<!-- Résultats -->
+<div id="results"></div>
+
+<!-- Pagination -->
+<div class="pagination" id="pagination"></div>
+
+<!-- Moteur de recherche Fuse.js -->
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+
+<!-- Ton script -->
+<script src="script.js"></script>
+
+</body>
+</html>
