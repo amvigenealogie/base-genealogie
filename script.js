@@ -1,294 +1,92 @@
-// -----------------------------
-// Chargement du CSV
-// -----------------------------
-async function loadCSV() {
-    const response = await fetch("data.csv");
-    const text = await response.text();
-    const lines = text.split("\n").map(l => l.split(","));
+document.addEventListener("DOMContentLoaded", function () {
 
-    const headers = lines[0];
-    const data = lines.slice(1).map(row => {
-        let obj = {};
-        headers.forEach((h, i) => obj[h] = row[i]);
-        return obj;
-    });
+    // ------------------------------------------------------------
+    // AJOUT DU BANDEAU D’INTRODUCTION EN HAUT DE LA PAGE
+    // ------------------------------------------------------------
+    const intro = document.createElement("div");
+    intro.style.background = "#333";
+    intro.style.color = "#ffd700";
+    intro.style.padding = "15px";
+    intro.style.margin = "0 0 20px 0";
+    intro.style.borderBottom = "3px solid #ffd700";
+    intro.style.fontSize = "1.1em";
+    intro.style.textShadow = "1px 1px 2px #000";
 
-    return data;
-}
+    intro.innerHTML = `
+        <strong>
+            Cette base est le fruit de relevés effectués dans différents documents disponibles aux archives départementales de la Haute‑Garonne ou de l’Aude ainsi que dans divers documents privés.
+        </strong><br>
+        Bonne recherche à tous.<br>
+        Contact : <a href="mailto:gilamiel31@gmail.com" style="color:#ffd700; text-decoration: underline;">gilamiel31@gmail.com</a>
+    `;
 
-let allData = [];
-let fuse;
-let resultsPerPage = 20;
-let currentPage = 1;
-let sortAsc = true;
+    document.body.prepend(intro);
 
-// -----------------------------
-// Soundex phonétique FR simplifié
-// -----------------------------
-function soundexFR(str) {
-    if (!str) return "";
+    // ------------------------------------------------------------
+    // CHARGEMENT DU CSV
+    // ------------------------------------------------------------
+    fetch("data.csv")
+        .then(response => response.text())
+        .then(data => {
+            const rows = data.split("\n").map(row => row.split(";"));
 
-    str = str.toUpperCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^A-Z]/g, "");
+            const tableBody = document.querySelector("#resultTable tbody");
+            const communeSelect = document.querySelector("#commune");
+            const typeSelect = document.querySelector("#type");
+            const sourceSelect = document.querySelector("#source");
+            const anneeSelect = document.querySelector("#annee");
 
-    if (!str) return "";
+            let communes = new Set();
+            let types = new Set();
+            let sources = new Set();
+            let annees = new Set();
 
-    const first = str[0];
+            rows.forEach((row, index) => {
+                if (index === 0) return; // ignore header
 
-    const map = {
-        B:1, P:1,
-        C:2, S:2, K:2, Q:2, G:2, J:2, X:2, Z:2,
-        D:3, T:3,
-        L:4,
-        M:5, N:5,
-        R:6
-    };
+                const [num, pre, nom, j, m, a, com, source, type, cote, lien, photo] = row;
 
-    let code = first;
-    let lastDigit = map[first] || "";
+                // Remplissage des filtres
+                if (com) communes.add(com);
+                if (type) types.add(type);
+                if (source) sources.add(source);
+                if (a) annees.add(a);
 
-    for (let i = 1; i < str.length; i++) {
-        let ch = str[i];
-        let digit = map[ch] || "";
+                // Ajout au tableau
+                const tr = document.createElement("tr");
 
-        if (digit !== lastDigit) {
-            code += digit;
-            lastDigit = digit;
-        }
-    }
+                tr.innerHTML = `
+                    <td>${num}</td>
+                    <td>${pre}</td>
+                    <td>${nom}</td>
+                    <td>${j}</td>
+                    <td>${m}</td>
+                    <td>${a}</td>
+                    <td>${com}</td>
+                    <td>${source}</td>
+                    <td>${type}</td>
+                    <td>${cote}</td>
+                    <td>${lien ? `<a href="${lien}" target="_blank">Voir</a>` : ""}</td>
+                    <td>${photo ? `<img src="${photo}" width="80">` : ""}</td>
+                `;
 
-    return code.padEnd(4, "0").slice(0, 4);
-}
+                tableBody.appendChild(tr);
+            });
 
-// -----------------------------
-// Tri
-// -----------------------------
-function sortResults(results) {
-    const column = document.getElementById("sortColumn").value;
-    if (!column) return results;
-
-    return results.sort((a, b) => {
-        if (a[column] < b[column]) return sortAsc ? -1 : 1;
-        if (a[column] > b[column]) return sortAsc ? 1 : -1;
-        return 0;
-    });
-}
-
-// -----------------------------
-// Affichage des résultats
-// -----------------------------
-function renderResults(results) {
-    results = sortResults(results);
-
-    const start = (currentPage - 1) * resultsPerPage;
-    const end = start + resultsPerPage;
-    const pageData = results.slice(start, end);
-
-    let html = "<table><tr>";
-
-    Object.keys(pageData[0] || {}).forEach(k => html += `<th>${k}</th>`);
-    html += "</tr>";
-
-    pageData.forEach(row => {
-        html += "<tr>";
-
-        Object.keys(row).forEach(key => {
-            let value = row[key];
-
-            if (key === "photo" && value) {
-                html += `<td><a href="${value}" target="_blank">
-                            <img src="${value}" style="height:60px; border-radius:4px;">
-                         </a></td>`;
-            }
-            else if (key === "lien" && value) {
-                html += `<td><a href="${value}" target="_blank"
-                            style="padding:6px 10px; background:#0078ff; color:white; border-radius:4px; text-decoration:none;">
-                            Voir
-                         </a></td>`;
-            }
-            else {
-                html += `<td>${value}</td>`;
-            }
+            // Remplissage des listes déroulantes
+            communes.forEach(c => communeSelect.innerHTML += `<option value="${c}">${c}</option>`);
+            types.forEach(t => typeSelect.innerHTML += `<option value="${t}">${t}</option>`);
+            sources.forEach(s => sourceSelect.innerHTML += `<option value="${s}">${s}</option>`);
+            annees.forEach(an => anneeSelect.innerHTML += `<option value="${an}">${an}</option>`);
         });
+});
 
-        html += "</tr>";
-    });
-
-    html += "</table>";
-    document.getElementById("results").innerHTML = html;
-
-    renderPagination(results.length);
+// ------------------------------------------------------------
+// FONCTION POUR EFFACER LES FILTRES
+// ------------------------------------------------------------
+function resetFilters() {
+    document.querySelector("#commune").value = "";
+    document.querySelector("#type").value = "";
+    document.querySelector("#source").value = "";
+    document.querySelector("#annee").value = "";
 }
-
-// -----------------------------
-// Pagination
-// -----------------------------
-function renderPagination(total) {
-    if (total === 0) {
-        document.getElementById("pagination").innerHTML = "";
-        return;
-    }
-
-    const pages = Math.ceil(total / resultsPerPage);
-    let html = "";
-
-    for (let i = 1; i <= pages; i++) {
-        html += `<button onclick="goToPage(${i})">${i}</button>`;
-    }
-
-    document.getElementById("pagination").innerHTML = html;
-}
-
-function goToPage(p) {
-    currentPage = p;
-    updateResults();
-}
-
-// -----------------------------
-// Filtres
-// -----------------------------
-function applyFilters(results) {
-    const fCom = document.getElementById("filterCom").value;
-    const fType = document.getElementById("filterType").value;
-    const fSource = document.getElementById("filterSource").value;
-    const fYear = document.getElementById("filterYear").value;
-
-    return results.filter(item => {
-        if (fCom && item.com !== fCom) return false;
-        if (fType && item.type !== fType) return false;
-        if (fSource && item.source !== fSource) return false;
-        if (fYear && item.a !== fYear) return false;
-        return true;
-    });
-}
-
-// -----------------------------
-// Mise à jour des résultats
-// -----------------------------
-function updateResults() {
-    const query = document.getElementById("search").value.trim();
-
-    if (!query) {
-        document.getElementById("results").innerHTML =
-            "<p style='color:#666;'>Tapez une recherche pour afficher des résultats.</p>";
-        document.getElementById("pagination").innerHTML = "";
-        return;
-    }
-
-    let results;
-
-    // Joker *
-    if (query.includes("*")) {
-        let regexPattern = "^" + query.replace(/\*/g, ".*") + "$";
-        let regex = new RegExp(regexPattern, "i");
-
-        results = allData.filter(item =>
-            regex.test(item.nom) ||
-            regex.test(item.pre)
-        );
-    }
-
-    // Recherche phonétique
-    else if (query.startsWith("~")) {
-        let q = query.slice(1);
-        let sx = soundexFR(q);
-
-        results = allData.filter(item =>
-            soundexFR(item.nom) === sx ||
-            soundexFR(item.pre) === sx
-        );
-    }
-
-    // Recherche stricte Fuse
-    else {
-        results = fuse.search(query).map(r => r.item);
-    }
-
-    // Appliquer les filtres
-    results = applyFilters(results);
-
-    if (results.length === 0) {
-        document.getElementById("results").innerHTML =
-            "<p style='color:#c00;'>Aucun résultat trouvé.</p>";
-        document.getElementById("pagination").innerHTML = "";
-        return;
-    }
-
-    renderResults(results);
-}
-
-// -----------------------------
-// Événements
-// -----------------------------
-document.getElementById("search").addEventListener("input", () => {
-    currentPage = 1;
-    updateResults();
-});
-
-document.getElementById("sortColumn").addEventListener("change", () => {
-    currentPage = 1;
-    updateResults();
-});
-
-document.getElementById("sortOrder").addEventListener("click", () => {
-    sortAsc = !sortAsc;
-    document.getElementById("sortOrder").innerText = sortAsc ? "Ordre croissant" : "Ordre décroissant";
-    updateResults();
-});
-
-// Bouton effacer
-document.getElementById("clearBtn").addEventListener("click", () => {
-    document.getElementById("search").value = "";
-    document.getElementById("results").innerHTML =
-        "<p style='color:#666;'>Tapez une recherche pour afficher des résultats.</p>";
-    document.getElementById("pagination").innerHTML = "";
-});
-
-// Mode sombre
-document.getElementById("darkToggle").addEventListener("click", () => {
-    document.body.classList.toggle("dark");
-});
-
-// -----------------------------
-// Initialisation
-// -----------------------------
-loadCSV().then(data => {
-    allData = data;
-
-    // Remplir automatiquement les filtres
-    const comSet = new Set();
-    const typeSet = new Set();
-    const sourceSet = new Set();
-    const yearSet = new Set();
-
-    allData.forEach(item => {
-        if (item.com) comSet.add(item.com);
-        if (item.type) typeSet.add(item.type);
-        if (item.source) sourceSet.add(item.source);
-        if (item.a) yearSet.add(item.a);
-    });
-
-    const fillSelect = (id, values) => {
-        const select = document.getElementById(id);
-        [...values].sort().forEach(v => {
-            const opt = document.createElement("option");
-            opt.value = v;
-            opt.textContent = v;
-            select.appendChild(opt);
-        });
-    };
-
-    fillSelect("filterCom", comSet);
-    fillSelect("filterType", typeSet);
-    fillSelect("filterSource", sourceSet);
-    fillSelect("filterYear", yearSet);
-
-    fuse = new Fuse(allData, {
-        keys: ["num", "pre", "nom", "j", "m", "a", "com", "source", "type", "cote", "lien", "photo"],
-        threshold: 0.0
-    });
-
-    document.getElementById("results").innerHTML =
-        "<p style='color:#666;'>Tapez une recherche pour afficher des résultats.</p>";
-});
