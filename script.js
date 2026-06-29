@@ -29,8 +29,8 @@ function soundexFR(str) {
     if (!str) return "";
 
     str = str.toUpperCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // enlever accents
-        .replace(/[^A-Z]/g, ""); // enlever caractères non lettres
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Z]/g, "");
 
     if (!str) return "";
 
@@ -178,9 +178,7 @@ function updateResults() {
 
     let results;
 
-    // -----------------------------
-    // Recherche avec joker *
-    // -----------------------------
+    // Joker *
     if (query.includes("*")) {
         let regexPattern = "^" + query.replace(/\*/g, ".*") + "$";
         let regex = new RegExp(regexPattern, "i");
@@ -191,9 +189,7 @@ function updateResults() {
         );
     }
 
-    // -----------------------------
     // Recherche phonétique
-    // -----------------------------
     else if (query.startsWith("~")) {
         let q = query.slice(1);
         let sx = soundexFR(q);
@@ -204,9 +200,7 @@ function updateResults() {
         );
     }
 
-    // -----------------------------
     // Recherche stricte Fuse
-    // -----------------------------
     else {
         results = fuse.search(query).map(r => r.item);
     }
@@ -262,9 +256,37 @@ document.getElementById("darkToggle").addEventListener("click", () => {
 loadCSV().then(data => {
     allData = data;
 
+    // Remplir automatiquement les filtres
+    const comSet = new Set();
+    const typeSet = new Set();
+    const sourceSet = new Set();
+    const yearSet = new Set();
+
+    allData.forEach(item => {
+        if (item.com) comSet.add(item.com);
+        if (item.type) typeSet.add(item.type);
+        if (item.source) sourceSet.add(item.source);
+        if (item.a) yearSet.add(item.a);
+    });
+
+    const fillSelect = (id, values) => {
+        const select = document.getElementById(id);
+        [...values].sort().forEach(v => {
+            const opt = document.createElement("option");
+            opt.value = v;
+            opt.textContent = v;
+            select.appendChild(opt);
+        });
+    };
+
+    fillSelect("filterCom", comSet);
+    fillSelect("filterType", typeSet);
+    fillSelect("filterSource", sourceSet);
+    fillSelect("filterYear", yearSet);
+
     fuse = new Fuse(allData, {
         keys: ["num", "pre", "nom", "j", "m", "a", "com", "source", "type", "cote", "lien", "photo"],
-        threshold: 0.0 // recherche stricte
+        threshold: 0.0
     });
 
     document.getElementById("results").innerHTML =
