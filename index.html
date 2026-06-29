@@ -1,127 +1,117 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Base de données – Recherche</title>
+<meta charset="UTF-8">
+<title>Base de données – Recherche</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #f5f5f5;
+    color: #222;
+}
+body.dark {
+    background: #1e1e1e;
+    color: #eaeaea;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    text-align: left;
+}
+.filter-box {
+    margin-top: 15px;
+    padding: 10px;
+    background: #e9e9e9;
+    border-radius: 6px;
+}
+#pagination button {
+    margin: 3px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+#darkToggle, #clearBtn {
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+#darkToggle {
+    background: #444;
+    color: white;
+}
+#clearBtn {
+    background: #d9534f;
+    color: white;
+    margin-left: 10px;
+}
+</style>
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: "Segoe UI", sans-serif;
-            background: #f4f4f4;
-        }
-
-        /* Bandeau d'information */
-        .intro {
-            background: #333;
-            color: #ffd700;
-            padding: 15px;
-            margin: 0;
-            border-bottom: 3px solid #ffd700;
-            font-size: 1.1em;
-            text-shadow: 1px 1px 2px #000;
-        }
-
-        .intro a {
-            color: #ffd700;
-            text-decoration: underline;
-        }
-
-        /* Conteneur principal */
-        .container {
-            padding: 20px;
-        }
-
-        /* Zone de filtres */
-        .filters {
-            background: #fff;
-            padding: 15px;
-            border-radius: 6px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
-        }
-
-        /* Tableau */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #fff;
-            box-shadow: 0 0 5px rgba(0,0,0,0.2);
-        }
-
-        th, td {
-            padding: 8px;
-            border: 1px solid #ccc;
-        }
-
-        th {
-            background: #333;
-            color: #ffd700;
-        }
-    </style>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
 </head>
 
 <body>
 
-    <!-- Bandeau d'information ajouté -->
-    <div class="intro">
-        <strong>
-            Cette base est le fruit de relevés effectués dans différents documents disponibles aux archives départementales de la Haute‑Garonne ou de l’Aude ainsi que dans divers documents privés.
-        </strong><br>
-        Bonne recherche à tous.<br>
-        Contact : <a href="mailto:gilamiel31@gmail.com">gilamiel31@gmail.com</a>
-    </div>
+<h2>Base de données – Recherche</h2>
 
-    <div class="container">
+<button id="darkToggle">Mode sombre</button>
 
-        <!-- Zone de filtres (ton script.js va remplir les listes) -->
-        <div class="filters">
-            <h2>Recherche</h2>
-            <label>Commune :</label>
-            <select id="commune"></select>
+<br><br>
 
-            <label>Type :</label>
-            <select id="type"></select>
+<input type="text" id="search" placeholder="Rechercher... (ex : ami*, ~amiel)" style="padding:8px; width:300px;">
+<button id="clearBtn">Effacer</button>
 
-            <label>Source :</label>
-            <select id="source"></select>
+<br><br>
 
-            <label>Année :</label>
-            <select id="annee"></select>
+<div class="filter-box">
+    <strong>Filtres :</strong><br><br>
 
-            <button onclick="resetFilters()">Effacer</button>
-        </div>
+    Commune :
+    <select id="filterCom">
+        <option value="">-- Toutes --</option>
+    </select>
 
-        <!-- Tableau rempli par script.js -->
-        <table id="resultTable">
-            <thead>
-                <tr>
-                    <th>num</th>
-                    <th>pre</th>
-                    <th>nom</th>
-                    <th>j</th>
-                    <th>m</th>
-                    <th>a</th>
-                    <th>com</th>
-                    <th>source</th>
-                    <th>type</th>
-                    <th>cote</th>
-                    <th>lien</th>
-                    <th>photo</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- script.js remplira ici -->
-            </tbody>
-        </table>
+    Type :
+    <select id="filterType">
+        <option value="">-- Tous --</option>
+    </select>
 
-    </div>
+    Source :
+    <select id="filterSource">
+        <option value="">-- Toutes --</option>
+    </select>
 
-    <script src="script.js"></script>
+    Année :
+    <select id="filterYear">
+        <option value="">-- Toutes --</option>
+    </select>
+</div>
+
+<br>
+
+<select id="sortColumn">
+    <option value="">-- Trier par --</option>
+    <option value="num">Numéro</option>
+    <option value="pre">Prénom</option>
+    <option value="nom">Nom</option>
+    <option value="a">Année</option>
+    <option value="type">Type</option>
+    <option value="source">Source</option>
+</select>
+
+<button id="sortOrder">Ordre croissant</button>
+
+<div id="results"></div>
+<div id="pagination"></div>
+
+<script src="script.js"></script>
 
 </body>
 </html>
+
